@@ -1,8 +1,10 @@
 import React, {useRef, useState} from 'react';
 import {Dimensions, SafeAreaView, View} from 'react-native';
 import styled from 'styled-components/native';
-import {launchImageLibrary} from 'react-native-image-picker';
 import ImagePicker from 'react-native-image-crop-picker';
+import {launchImageLibrary} from 'react-native-image-picker';
+import ViewShot from 'react-native-view-shot';
+import Share from 'react-native-share';
 
 const StoryWidth = Dimensions.get('window').width / 1.8;
 const PostWidth = Dimensions.get('window').width - 80;
@@ -25,7 +27,6 @@ const Moldura = styled.Image`
   z-index: 2;
   height: ${({mode}) => (mode === 'STORY' ? StoryWidth * 2 : PostWidth)}px;
   width: ${({mode}) => (mode === 'STORY' ? StoryWidth : PostWidth)}px;
-  background: red;
 `;
 
 const Controls = styled.View`
@@ -43,13 +44,17 @@ const Button = styled.TouchableOpacity`
   padding: 12px;
 `;
 
+const ShareButton = styled.TouchableOpacity`
+  align-self: center;
+`;
+
 const Text = styled.Text``;
 
 function App() {
   const [photoType, setPhotoType] = useState('STORY');
   const [backgroundImage, setBackgroundImage] = useState();
   const [moldura, setMoldura] = useState();
-  const imageRef = useRef(null);
+  const viewShotRef = useRef(null);
 
   function changePhotoType(type) {
     setPhotoType(type);
@@ -77,35 +82,55 @@ function App() {
   }
 
   function openMoldura() {
-    ImagePicker.openPicker({
-      mediaType: 'photo',
-      width: photoType === 'STORY' ? 1080 : 800,
-      height: photoType === 'STORY' ? 1920 : 600,
-      cropping: true,
-      includeBase64: true,
-      enableRotationGesture: true,
-    }).then(image => {
-      setMoldura(image.data);
+    launchImageLibrary({}, response => {
+      setMoldura(response.assets[0].uri);
+    });
+  }
+
+  function share() {
+    viewShotRef.current.capture().then(uri => {
+      const options = {
+        message: 'compartilhar imagem',
+        title: 'compatilhar',
+        url: uri,
+        type: 'image/jpg',
+      };
+
+      Share.open(options)
+        .then(res => {
+          console.log(res);
+        })
+        .catch(err => {
+          err && console.log(err);
+        });
     });
   }
 
   return (
     <SafeAreaView style={{flex: 1}}>
       <View style={{flex: 1}}>
-        <Container mode={photoType}>
+        <ViewShot ref={viewShotRef} options={{format: 'jpg', quality: 1}}>
+          <Container mode={photoType}>
+            <Image
+              resizeMode="cover"
+              mode={photoType}
+              source={{uri: 'data:image/png;base64,' + backgroundImage}}
+            />
+
+            <Moldura
+              resizeMode="cover"
+              mode={photoType}
+              source={{uri: moldura}}
+            />
+          </Container>
+        </ViewShot>
+
+        <ShareButton onPress={share}>
           <Image
-            ref={imageRef}
-            resizeMode="cover"
-            mode={photoType}
-            source={{uri: 'data:image/png;base64,' + backgroundImage}}
+            style={{height: 30, width: 30}}
+            source={{uri: 'http://pngimg.com/uploads/share/share_PNG15.png'}}
           />
-          <Moldura
-            ref={imageRef}
-            resizeMode="cover"
-            mode={photoType}
-            source={{uri: 'data:image/png;base64,' + moldura}}
-          />
-        </Container>
+        </ShareButton>
 
         <Controls>
           <Button
