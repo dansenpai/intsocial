@@ -1,112 +1,142 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
+import React, {useRef, useState} from 'react';
+import {Dimensions, SafeAreaView, View} from 'react-native';
+import styled from 'styled-components/native';
+import {launchImageLibrary} from 'react-native-image-picker';
+import ImagePicker from 'react-native-image-crop-picker';
 
-import React from 'react';
-import type {Node} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const StoryWidth = Dimensions.get('window').width / 1.8;
+const PostWidth = Dimensions.get('window').width - 80;
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const Container = styled.View`
+  border-width: 1px;
+  height: ${({mode}) => (mode === 'STORY' ? StoryWidth * 2 : PostWidth)}px;
+  width: ${({mode}) => (mode === 'STORY' ? StoryWidth : PostWidth)}px;
+  margin: 40px auto;
+`;
 
-const Section = ({children, title}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
+const Image = styled.Image`
+  height: ${({mode}) => (mode === 'STORY' ? StoryWidth * 2 : PostWidth)}px;
+`;
+
+const Moldura = styled.Image`
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  height: ${({mode}) => (mode === 'STORY' ? StoryWidth * 2 : PostWidth)}px;
+  width: ${({mode}) => (mode === 'STORY' ? StoryWidth : PostWidth)}px;
+  background: red;
+`;
+
+const Controls = styled.View`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 20px 20px;
+`;
+
+const Button = styled.TouchableOpacity`
+  background: ${({active}) => (active ? '#eee' : '#fff')};
+  padding: 12px;
+`;
+
+const Text = styled.Text``;
+
+function App() {
+  const [photoType, setPhotoType] = useState('STORY');
+  const [backgroundImage, setBackgroundImage] = useState();
+  const [moldura, setMoldura] = useState();
+  const imageRef = useRef(null);
+
+  function changePhotoType(type) {
+    setPhotoType(type);
+  }
+
+  function changeToStory() {
+    changePhotoType('STORY');
+  }
+
+  function changeToPost() {
+    changePhotoType('POST');
+  }
+
+  function loadImage() {
+    ImagePicker.openPicker({
+      mediaType: 'photo',
+      width: photoType === 'STORY' ? 1080 : 800,
+      height: photoType === 'STORY' ? 1920 : 600,
+      cropping: true,
+      includeBase64: true,
+      enableRotationGesture: true,
+    }).then(image => {
+      setBackgroundImage(image.data);
+    });
+  }
+
+  function openMoldura() {
+    ImagePicker.openPicker({
+      mediaType: 'photo',
+      width: photoType === 'STORY' ? 1080 : 800,
+      height: photoType === 'STORY' ? 1920 : 600,
+      cropping: true,
+      includeBase64: true,
+      enableRotationGesture: true,
+    }).then(image => {
+      setMoldura(image.data);
+    });
+  }
+
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
+    <SafeAreaView style={{flex: 1}}>
+      <View style={{flex: 1}}>
+        <Container mode={photoType}>
+          <Image
+            ref={imageRef}
+            resizeMode="cover"
+            mode={photoType}
+            source={{uri: 'data:image/png;base64,' + backgroundImage}}
+          />
+          <Moldura
+            ref={imageRef}
+            resizeMode="cover"
+            mode={photoType}
+            source={{uri: 'data:image/png;base64,' + moldura}}
+          />
+        </Container>
 
-const App: () => Node = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+        <Controls>
+          <Button
+            hitSlop={{top: 10, bottom: 10, right: 10, left: 10}}
+            onPress={loadImage}>
+            <Text>Carregar Imagem</Text>
+          </Button>
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+          <Button
+            active={photoType === 'STORY'}
+            hitSlop={{top: 10, bottom: 10, right: 10, left: 10}}
+            onPress={changeToStory}>
+            <Text>Story</Text>
+          </Button>
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+          <Button
+            active={photoType === 'POST'}
+            hitSlop={{top: 10, bottom: 10, right: 10, left: 10}}
+            onPress={changeToPost}>
+            <Text>Post</Text>
+          </Button>
+
+          <Button
+            onPress={openMoldura}
+            hitSlop={{top: 10, bottom: 10, right: 10, left: 10}}>
+            <Text>Moldura</Text>
+          </Button>
+        </Controls>
+      </View>
     </SafeAreaView>
   );
-};
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+}
 
 export default App;
